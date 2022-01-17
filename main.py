@@ -5,6 +5,8 @@ from multiprocessing import Pool
 import csv
 
 from config import URL, author, useragent, proxy, number_of_processes, task
+from models.database import session
+from models.parsed import Parser
 
 
 def get_html(url):
@@ -83,8 +85,20 @@ def main():
         while True:
             post_data = get_data_post(html)
             csv_data = read_csv()
+
             if len(csv_data) == 0:
                 write_csv(post_data)
+
+                # new_post = Parser(
+                #     author_name=post_data['author'],
+                #     post_name=post_data['title'],
+                #     post_date=post_data['date']
+                # )
+                # session.add(new_post)
+                # session.commit()
+                #
+                # for post in session.query(Parser):
+                #     print(post)
             else:
                 for csv_row in csv_data:
                     if post_data['title'] not in csv_row:
