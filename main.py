@@ -2,9 +2,9 @@ import requests
 from bs4 import BeautifulSoup
 from multiprocessing import Pool
 
-import csv
-
-from config import URL, author, useragent, proxy, number_of_processes, task
+from config import useragent, proxy, task, number_of_processes, URL, author
+from models.database import session
+from models.parsed import Parser
 
 
 def get_html(url):
@@ -26,7 +26,7 @@ def get_data_post(html):
     soup = BeautifulSoup(html, 'lxml')
     posts = soup.find_all('div', class_='topic')
     data = []
-    post_data = {}
+    post_data_list = []
 
     for post in posts:
         class_info = post.find('ul', class_='info')
@@ -49,30 +49,49 @@ def get_data_post(html):
     for post in data:
         if author in post:
             post_data = {'author': post[1], 'title': post[0], 'date': post[2]}
-            print(f'Author: {author}, post data: {post_data} ')
-    return post_data
-
-
-def write_csv(data):
-    with open('coinmarketcap.csv', 'a', encoding='UTF-8', newline='') as f:
-        writer = csv.writer(f)
-        writer.writerow((data['author'], data['title'], data['date']))
-        print(f"{data['title']} 'parsed'")
-
-
-def read_csv():
-    with open('coinmarketcap.csv', encoding='utf-8') as f:
-        reader = csv.reader(f)
-        return list(reader)
+            print(f'Author: {author}, post data: {post_data}')
+            post_data_list.append(post_data)
+    return post_data_list
 
 
 def make_all(url):
     html = get_html(url)
     data = get_data_post(html)
-    write_csv(data)
+    write_row(data)
+
+
+def write_row(data):
+    for row in data:
+        new_row = Parser(author_name=row['author'], post_name=row['title'], post_date=row['date'])
+        session.add(new_row)
+        print(f"{row['title']} 'parsed'")
+    session.commit()
+
+
+def read_table(table):
+    table_data = []
+    for row in session.query(table):
+        table_data.append(row)
+        print(row)
+    return table_data
+
+
+def delete_all_rows(table):
+    for conf in session.query(table):
+        session.delete(conf)
+        session.commit()
 
 
 def main():
+    """Создать"""
+    # make_all(URL)
+
+    """Посмотреть"""
+    # read_table(Parser)
+
+    """Удалить"""
+    # delete_all_rows(Parser)
+
     html = get_html(URL)
     pages = get_page_links(html)
 
@@ -80,15 +99,12 @@ def main():
         with Pool(number_of_processes) as p:
             p.map(make_all, pages)
     else:
+
         while True:
-            post_data = get_data_post(html)
-            csv_data = read_csv()
-            if len(csv_data) == 0:
-                write_csv(post_data)
-            else:
-                for csv_row in csv_data:
-                    if post_data['title'] not in csv_row:
-                        write_csv(post_data)
+            table_data = read_table(Parser)
+
+            if len(table_data) == 0:
+                make_all(URL)
 
 
 if __name__ == '__main__':
