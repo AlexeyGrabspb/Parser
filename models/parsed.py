@@ -4,15 +4,15 @@ from models.database import Base
 
 
 class Parser(Base):
-    __tablename__ = 'Parsed'
+    __tablename__ = 'Parser'
     __tableargs__ = {
         'comment': 'Таблица спарсенных данных определенного пользователя'
     }
 
     id = Column(Integer, primary_key=True)
-    author_name = Column(String, comment='Имя блогера')
-    post_name = Column(String, comment='Заголовок поста')
-    post_date = Column(String, comment='Дата публикации')
+    author_name = Column(String(128), comment='Имя блогера')
+    post_name = Column(String(128), comment='Заголовок поста')
+    post_date = Column(String(128), comment='Дата публикации')
 
     def __init__(self, author_name: str, post_name: str, post_date: str):
         self.author_name = author_name
@@ -30,9 +30,9 @@ class Config(Base):
     }
 
     id = Column(Integer, primary_key=True)
-    url = Column(String(128), comment='url, который будет парситься')
-    author_name = Column(String(128), comment='Имя блогера, чьи блоги неоюходимо спарсить')
-    number_of_processes = Column(String(128), comment='Кол-во процессов')
+    url = Column(String, comment='url, который будет парситься')
+    author_name = Column(String, comment='Имя блогера, чьи блоги неоюходимо спарсить')
+    number_of_processes = Column(Integer, comment='Кол-во процессов')
     task = Column(Integer, comment='1 - парсить новые посты данного автора,\
      2 - спарсить посты автора за весь период')
 
