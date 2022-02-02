@@ -1,10 +1,10 @@
 import requests
 from bs4 import BeautifulSoup
-from multiprocessing import Pool
 
-from config import useragent, proxy, task, number_of_processes, URL, author
-from models.database import session
+from config import useragent, proxy  # task, number_of_processes, URL, author
+from components.database import Database, _get_session
 from models.parsed import Parser
+import multiprocessing
 
 
 def get_html(url):
@@ -83,29 +83,46 @@ def delete_all_rows(table):
 
 
 def main():
-    """Создать"""
+
+
+    """Создать запись в таблицу Parser"""
     # make_all(URL)
 
-    """Посмотреть"""
+    """Посмотреть записи """
     # read_table(Parser)
 
     """Удалить"""
     # delete_all_rows(Parser)
+    print('1')
 
-    html = get_html(URL)
-    pages = get_page_links(html)
+    print('2')
+    # html = get_html(URL)
+    # pages = get_page_links(html)
+    #
+    # if task == 1:
+    #     with Pool(number_of_processes) as p:
+    #         p.map(make_all, pages)
+    # else:
+    #
+    #     while True:
+    #         table_data = read_table(Parser)
+    #
+    #         if len(table_data) == 0:
+    #             make_all(URL)
 
-    if task == 1:
-        with Pool(number_of_processes) as p:
-            p.map(make_all, pages)
-    else:
 
-        while True:
-            table_data = read_table(Parser)
-
-            if len(table_data) == 0:
-                make_all(URL)
+def thread(queue):
+    session = _get_session()
+    database = Database(session)
+    item = queue.get()
+    database.add_something()
 
 
 if __name__ == '__main__':
-    main()
+    proc_queue = multiprocessing.Queue()
+    proc_count = 4
+
+    for _ in range(proc_count):
+        parse_proc = multiprocessing.Process(target=thread, args=(proc_queue,))
+        parse_proc.start()
+
