@@ -13,7 +13,7 @@ def _get_session():
     return session
 
 
-class ConfigTableRelation:
+class ConstantsToTable:
     def __init__(self, session, url, author_name, number_of_processes, task):
         self.session = session
         self.url = url
@@ -22,6 +22,7 @@ class ConfigTableRelation:
         self.task = task
 
     def add_config_data(self):
+        self.session.query(Config).delete()
         record = Config(
             url=self.url,
             author_name=self.author_name,
@@ -31,13 +32,20 @@ class ConfigTableRelation:
         self.session.add(record)
         self.session.commit()
 
+
+class TableToConstants:
+    def __init__(self, session):
+        self.session = session
+
     def get_config_data(self):
+        data = []
         records = self.session.query(Config).all()
         for record in records:
-            print(record.__dict__)
+            data.append(record.__dict__)
+        return data
 
 
-class Database:
+class AddData:
     def __init__(self, session, author_name, post_name, post_date):
         self.session = session
         self.author_name = author_name
@@ -53,7 +61,16 @@ class Database:
         self.session.add(record)
         self.session.commit()
 
+
+class GetDelData:
+    def __init__(self, session):
+        self.session = session
+
     def get_data(self):
         records = self.session.query(Parser).all()
         for record in records:
             print(record.__dict__)
+
+    def del_data(self):
+        self.session.query(Parser).delete()
+        self.session.commit()
