@@ -1,3 +1,4 @@
+from config import URL, author_name, number_of_processes, task
 from models.base import Base
 from models.config import Config
 from models.parsed import Parser
@@ -13,29 +14,24 @@ def _get_session():
     return session
 
 
-class ConstantsToTable:
-    def __init__(self, session, url, author_name, number_of_processes, task):
+class ConstantsDatabaseRelation:
+    url = URL
+    author = author_name
+    processes_count = number_of_processes
+    task_type = task
+    def __init__(self, session):
         self.session = session
-        self.url = url
-        self.author_name = author_name
-        self.number_of_processes = number_of_processes
-        self.task = task
 
     def add_config_data(self):
         self.session.query(Config).delete()
         record = Config(
             url=self.url,
-            author_name=self.author_name,
-            number_of_processes=self.number_of_processes,
-            task=self.task
+            author_name=self.author,
+            number_of_processes=self.processes_count,
+            task=self.task_type
         )
         self.session.add(record)
         self.session.commit()
-
-
-class TableToConstants:
-    def __init__(self, session):
-        self.session = session
 
     def get_config_data(self):
         data = []

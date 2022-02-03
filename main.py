@@ -1,10 +1,10 @@
 import requests
 from bs4 import BeautifulSoup
 
-from config import useragent, proxy, task, number_of_processes, URL, author_name
-from components.database import AddData, GetDelData, _get_session, ConstantsToTable, TableToConstants
+from config import useragent, proxy
+from components.database import AddData, GetDelData, _get_session, ConstantsDatabaseRelation
 from models.parsed import Parser
-from multiprocessing import Process, Queue
+from multiprocessing import Process, Queue , Pool
 
 
 def get_html(url):
@@ -115,7 +115,7 @@ def main():
     pages = get_page_links(html)
 
     if task == 1:
-        with multiprocessing.Pool(number_of_processes) as p:
+        with Pool(number_of_processes) as p:
             p.map(make_all, pages)
     else:
 
@@ -131,13 +131,13 @@ def main():
 
 def config_to_table():
     session = _get_session()
-    database = ConstantsToTable(session, URL, author_name, number_of_processes, task)
+    database = ConstantsDatabaseRelation(session)
     database.add_config_data()
 
 
 def table_to_constants():
     session = _get_session()
-    database = TableToConstants(session)
+    database = ConstantsDatabaseRelation(session)
     data = database.get_config_data()
     first_row = data[0]
     current_URL = first_row['url']
@@ -172,10 +172,12 @@ def thread(queue):
 
 if __name__ == '__main__':
     """Создать таблицу config и передать значения констант из config как значения полей этой таблицы"""
-    # config_to_table()
+    config_to_table()
 
     """Возвращаем обратно значения с бд и принимаем за текущие константы(бесполезно, но ради практики можно)"""
     URL, author_name, number_of_processes, task = table_to_constants()
+
+    print(URL, author_name, number_of_processes, task)
 
     """Получить строки из таблицы parser"""
     # get_data_parser()
