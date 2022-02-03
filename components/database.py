@@ -6,7 +6,7 @@ from sqlalchemy.orm import sessionmaker
 
 
 def _get_session():
-    engine = create_engine('postgresql+psycopg2://alexey:12345@localhost/Parser', echo=True)
+    engine = create_engine('postgresql+psycopg2://postgres:postgresql@192.168.10.101/alexey_grab', echo=True)
     Session = sessionmaker(bind=engine)
     session = Session()
     Base.metadata.create_all(engine)
@@ -67,9 +67,15 @@ class GetDelData:
         self.session = session
 
     def get_data(self):
-        records = self.session.query(Parser).all()
-        for record in records:
-            print(record.__dict__)
+        table_data = []
+        # records = self.session.query(Parser).all()
+        # for record in records:
+        #     print(record.__dict__)
+
+        for row in self.session.query(Parser):
+            table_data.append(row)
+            print(row)
+        return table_data
 
     def del_data(self):
         self.session.query(Parser).delete()

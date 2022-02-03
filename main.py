@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 from config import useragent, proxy, task, number_of_processes, URL, author_name
 from components.database import AddData, GetDelData, _get_session, ConstantsToTable, TableToConstants
 from models.parsed import Parser
-from multiprocessing import Process
+from multiprocessing import Process, Queue
 
 
 def get_html(url):
@@ -54,10 +54,10 @@ def get_data_post(html):
     return post_data_list
 
 
-# def make_all(url):
-#     html = get_html(url)
-#     data = get_data_post(html)
-#     write_row(data)
+def make_all(url):
+    html = get_html(url)
+    data = get_data_post(html)
+    add_data_parser(data)
 #
 #
 # def write_row(data):
@@ -88,11 +88,6 @@ def main():
     """Создать запись в таблицу Parser"""
     # make_all(URL)
 
-    """Посмотреть записи """
-    # read_table(Parser)
-
-    """Удалить"""
-    # delete_all_rows(Parser)
 
     # print(URL)
     # html = get_html(URL)
@@ -107,7 +102,31 @@ def main():
     #         table_data = read_table(Parser)
     #
     #         if len(table_data) == 0:
-    #             make_all(URL)
+    #             html = get_html(URL)
+    #             data = get_data_post(html)
+
+
+
+
+
+
+    print(URL)
+    html = get_html(URL)
+    pages = get_page_links(html)
+
+    if task == 1:
+        with multiprocessing.Pool(number_of_processes) as p:
+            p.map(make_all, pages)
+    else:
+
+        while True:
+            table_data = get_data_parser()
+            if len(table_data) == 0:
+                make_all(URL)
+
+
+
+
 
 
 def config_to_table():
@@ -131,7 +150,7 @@ def table_to_constants():
 def get_data_parser():
     session = _get_session()
     database = GetDelData(session)
-    database.get_data()
+    return database.get_data()
 
 
 def del_data_parser():
@@ -139,12 +158,16 @@ def del_data_parser():
     database = GetDelData(session)
     database.del_data()
 
+def add_data_parser():
+    session = _get_session()
+    database = AddData(session)
+    database.add_data()
 
-# def thread(queue):
-#     session = _get_session()
-#     database = AddData(session, author_name, post_name, post_date)
-#     item = queue.get()
-#     database.add_data()
+def thread(queue):
+    session = _get_session()
+    database = AddData(session, author_name, post_name, post_date)
+    item = queue.get()
+    database.add_data()
 
 
 if __name__ == '__main__':
@@ -166,9 +189,9 @@ if __name__ == '__main__':
 
 
 
-
-
-    # proc_queue = multiprocessing.Queue()
+    #
+    #
+    # proc_queue = Queue()
     #
     # for _ in range(number_of_processes):
     #     parse_proc = Process(target=thread, args=(proc_queue,))
