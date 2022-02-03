@@ -68,9 +68,10 @@ class GetDelData:
         # for record in records:
         #     print(record.__dict__)
 
-        for row in self.session.query(Parser):
-            table_data.append(row)
-            print(row)
+        for row in self.session.query(Parser).all():
+            row_dict = row.__dict__
+            del row_dict['_sa_instance_state']
+            table_data.append(row_dict)
         return table_data
 
     def del_data(self):
