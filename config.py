@@ -5,7 +5,7 @@ from random import choice
 
 URL = 'https://bikepost.ru/index/'
 author_name = 'kim'
-number_of_processes = 5
+number_of_processes = 2
 task = 2
 
 useragents = open('useragents.txt').read().split('\n')

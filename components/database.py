@@ -7,7 +7,7 @@ from sqlalchemy.orm import sessionmaker
 
 
 def _get_session():
-    engine = create_engine('postgresql+psycopg2://postgres:postgresql@192.168.10.101/alexey_grab', echo=True)
+    engine = create_engine('postgresql+psycopg2://alexey:12345@localhost/Parser', echo=True)
     Session = sessionmaker(bind=engine)
     session = Session()
     Base.metadata.create_all(engine)
@@ -19,6 +19,7 @@ class ConstantsDatabaseRelation:
     author = author_name
     processes_count = number_of_processes
     task_type = task
+
     def __init__(self, session):
         self.session = session
 

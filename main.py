@@ -46,7 +46,6 @@ def get_data_post(html):
         except AttributeError:
             pass
 
-    print(data, 'THIS IS DATA')
     for post in data:
         if author_name in post:
             post_data = {'author': post[1], 'title': post[0], 'date': post[2]}
@@ -59,87 +58,6 @@ def get_index_data(url):
     html = get_html(url)
     data = get_data_post(html)
     return data
-
-
-#
-#
-# def write_row(data):
-#     for row in data:
-#         new_row = Parser(author_name=row['author'], post_name=row['title'], post_date=row['date'])
-#         session.add(new_row)
-#         print(f"{row['title']} 'parsed'")
-#     session.commit()
-#
-#
-# def read_table(table):
-#     table_data = []
-#     for row in session.query(table):
-#         table_data.append(row)
-#         print(row)
-#     return table_data
-#
-#
-# def delete_all_rows(table):
-#     for conf in session.query(table):
-#         session.delete(conf)
-#         session.commit()
-
-
-def main():
-    """Создать запись в таблицу Parser"""
-    # make_all(URL)
-
-    # print(URL)
-    # html = get_html(URL)
-    # pages = get_page_links(html)
-    #
-    # if task == 1:
-    #     with multiprocessing.Pool(number_of_processes) as p:
-    #         p.map(make_all, pages)
-    # else:
-    #
-    #     while True:
-    #         table_data = read_table(Parser)
-    #
-    #         if len(table_data) == 0:
-    #             html = get_html(URL)
-    #             data = get_data_post(html)
-
-
-    html = get_html(URL)
-    pages = get_page_links(html)
-
-    if task == 1:
-        # with multiprocessing.Pool(number_of_processes) as p:
-        #     p.map(make_all, pages)
-        pass
-    else:
-        table_data = get_data_parser()  # Проверяем, текущее наполнение таблицы
-
-        while True:
-            print(len(table_data) == 0)
-            if len(table_data) == 0:    # Если пустая, заносим текущий результат парсинга первой страницы
-                html = get_html(URL)
-                data = get_data_post(html)
-                print('tut')
-                add_data_parser(data)
-                print('done')
-            else:
-                print('wasdasdfasda')
-                current_table_data = get_data_parser()
-                for row in current_table_data:  # Если непустая, сверяем с тем что мы получили в текущем цикле \
-                    # и тем какие данные были при запуске скрипта. Если данные за в этом цикле новые - записываем.
-                    print(row['post_name'], 'traceback hello')
-                    if row not in table_data:
-                        add_data_parser(row)
-                    else:
-                        print('done')
-
-            # if len(table_data) == 0:
-            #
-            #     proc_queue = Queue()
-            #     proc_queue.put_nowait(get_index_data(URL))
-            #     print(proc_queue, 'is proc queve')
 
 
 def config_to_table():
@@ -175,13 +93,11 @@ def del_data_parser():
 
 def add_data_parser(data):
     session = _get_session()
-    print(data, 'is data')
     for row in data:
-        print(row, 'is row')
         author_name, post_name, post_date = row['author'], row['title'], row['date']
         database = AddData(session, author_name, post_name, post_date)
         database.add_data()
-    print('Added new post in table parser')
+        print('Added new post in table parser')
 
 
 def creator(data, queue):
@@ -200,20 +116,42 @@ def thread(queue):
         # database.add_data()
 
 
+def main():
+    html = get_html(URL)
+    pages = get_page_links(html)
+
+    if task == 1:
+        # with multiprocessing.Pool(number_of_processes) as p:
+        #     p.map(make_all, pages)
+        pass
+    else:   # Парсим нонстопом, если находим пост, которого нету в бд, добавляем
+        while True:
+            table_data = get_data_parser()  # Проверяем, текущее наполнение таблицы
+            if len(table_data) == 0:    # Если пустая, заносим текущий результат парсинга первой страницы
+                html = get_html(URL)
+                data = get_data_post(html)
+                add_data_parser(data)
+            else:    # Если непустая, сверяем с тем что мы получим в текущем цикле и тем какие данные были при \
+                # запуске скрипта. Если данные в этом цикле новые - записываем.
+                while True:
+                    current_table_data = get_data_parser()
+                    for row in current_table_data:
+                        if row not in table_data:
+                            add_data_parser(row)
+
+
 if __name__ == '__main__':
-    """Создать таблицу config и передать значения констант из config как значения полей этой таблицы"""
+    """Создать таблицу config и передать значения констант из config, как значения полей этой таблицы"""
     # config_to_table()
-
-    """Возвращаем обратно значения с бд и принимаем за текущие константы(бесполезно, но ради практики можно)"""
-    URL, author_name, number_of_processes, task = table_to_constants()
-
-    print(URL, author_name, number_of_processes, task)
 
     """Получить строки из таблицы parser"""
     # get_data_parser()
 
     """Очистить таблицу parser"""
     # del_data_parser()
+
+    """Возвращаем обратно значения с бд и принимаем за текущие константы(бесполезно, но ради практики можно)"""
+    URL, author_name, number_of_processes, task = table_to_constants()
 
     main()
 
