@@ -3,8 +3,7 @@ from bs4 import BeautifulSoup
 
 from config import useragent, proxy
 from components.database import AddData, GetDelData, _get_session, ConstantsDatabaseRelation
-from models.parsed import Parser
-from multiprocessing import Process, Queue, Pool
+from multiprocessing import Process, Queue
 
 
 def get_html(url):
@@ -93,24 +92,19 @@ def add_data_parser(data):
         author_name, post_name, post_date = row['author'], row['title'], row['date']
         database = AddData(session, author_name, post_name, post_date)
         database.add_data()
-        print('Added new post in table parser')
 
 
-def creator(data, queue):
+def creator_task_one(data, queue):
     print('creating data putting it on the queue')
     for item in data:
         queue.put(item)
-        print('done')
-    print('leave from creator')
 
 
-def thread(queue):
+def thread_task_one(queue):
     while not queue.empty():
         each_url = queue.get()
         html = get_html(each_url)
-        print('ya zdes`')
         data = get_data_post(html)
-        print(data, 'is data in thread')
         for row in data:
             author_name, post_name, post_date = row['author'], row['title'], row['date']
             session = _get_session()
@@ -119,20 +113,27 @@ def thread(queue):
             print('The post has been added')
 
 
+"""Пока не уверен, что в принципе для какой-либо из задач task=2 нужна multiprocessors"""
+# def creator_task_two(data, queue):
+#
+#
+# def thread_task_two(queue):
+
+
 def main():
     html = get_html(URL)
     pages = get_page_links(html)
 
     if task == 1:
         proc_queue = Queue()
-        process_one = Process(target=creator, args=(pages, proc_queue))
+        process_one = Process(target=creator_task_one, args=(pages, proc_queue))
         process_one.start()
-        # process_one.join() не работает(
+        # process_one.join()  # не работает( По идее, запускаем процесс наполнения очереди proc_queue полученными \
+        # урлами, пока все урлы не прийдут в proc_queue не парсим
 
         for _ in range(number_of_processes):
-            process_two = Process(target=thread, args=(proc_queue, ))
+            process_two = Process(target=thread_task_one, args=(proc_queue, ))
             process_two.start()
-            # process_two.join()
 
     else:   # Парсим нонстопом, если находим пост, которого нету в бд, добавляем
         while True:
@@ -144,13 +145,14 @@ def main():
                 # запуске скрипта. Если данные в этом цикле новые - записываем.
                 while True:
                     current_table_data = get_data_parser()
+
                     for row in current_table_data:
                         if row not in table_data:
                             add_data_parser(row)
 
 
 if __name__ == '__main__':
-    """Создать таблицу config и передать значения констант из config, как значения полей этой таблицы"""
+    """Передаем значения констант, которые мы внесли в config, как значения полей этой таблицы"""
     config_to_table()
 
     """Получить строки из таблицы parser"""
