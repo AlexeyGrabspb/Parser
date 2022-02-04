@@ -7,7 +7,7 @@ from sqlalchemy.orm import sessionmaker
 
 
 def _get_session():
-    engine = create_engine('postgresql+psycopg2://alexey:12345@localhost/Parser', echo=True)
+    engine = create_engine('postgresql+psycopg2://postgres:postgresql@192.168.10.101/alexey_grab', echo=True)
     Session = sessionmaker(bind=engine)
     session = Session()
     Base.metadata.create_all(engine)

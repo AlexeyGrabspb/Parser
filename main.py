@@ -22,6 +22,8 @@ def get_page_links(html):
 
 
 def get_data_post(html):
+    URL, author_name, number_of_processes, task = table_to_constants()  # Процесс не видит эти константы,\
+    # объявленные в if __name__ == __main__, есть догадки почему, но пока так
     print(f'New proxy & User-Agent: {proxy} & {useragent}')
     soup = BeautifulSoup(html, 'lxml')
     posts = soup.find_all('div', class_='topic')
@@ -52,12 +54,6 @@ def get_data_post(html):
             print(f'Author: {author_name}, post data: {post_data}')
             post_data_list.append(post_data)
     return post_data_list
-
-
-def get_index_data(url):
-    html = get_html(url)
-    data = get_data_post(html)
-    return data
 
 
 def config_to_table():
@@ -104,16 +100,23 @@ def creator(data, queue):
     print('creating data putting it on the queue')
     for item in data:
         queue.put(item)
+        print('done')
+    print('leave from creator')
 
 
 def thread(queue):
-    session = _get_session()
-    while True:
-        data = queue.get
-        print(data, 'is data in process_two')
-        # database = AddData(session, author_name, post_name, post_date)
-        # item = queue.get()
-        # database.add_data()
+    while not queue.empty():
+        each_url = queue.get()
+        html = get_html(each_url)
+        print('ya zdes`')
+        data = get_data_post(html)
+        print(data, 'is data in thread')
+        for row in data:
+            author_name, post_name, post_date = row['author'], row['title'], row['date']
+            session = _get_session()
+            database = AddData(session, author_name, post_name, post_date)
+            database.add_data()
+            print('The post has been added')
 
 
 def main():
@@ -121,14 +124,20 @@ def main():
     pages = get_page_links(html)
 
     if task == 1:
-        # with multiprocessing.Pool(number_of_processes) as p:
-        #     p.map(make_all, pages)
-        pass
+        proc_queue = Queue()
+        process_one = Process(target=creator, args=(pages, proc_queue))
+        process_one.start()
+        # process_one.join() не работает(
+
+        for _ in range(number_of_processes):
+            process_two = Process(target=thread, args=(proc_queue, ))
+            process_two.start()
+            # process_two.join()
+
     else:   # Парсим нонстопом, если находим пост, которого нету в бд, добавляем
         while True:
             table_data = get_data_parser()  # Проверяем, текущее наполнение таблицы
             if len(table_data) == 0:    # Если пустая, заносим текущий результат парсинга первой страницы
-                html = get_html(URL)
                 data = get_data_post(html)
                 add_data_parser(data)
             else:    # Если непустая, сверяем с тем что мы получим в текущем цикле и тем какие данные были при \
@@ -142,7 +151,7 @@ def main():
 
 if __name__ == '__main__':
     """Создать таблицу config и передать значения констант из config, как значения полей этой таблицы"""
-    # config_to_table()
+    config_to_table()
 
     """Получить строки из таблицы parser"""
     # get_data_parser()
@@ -153,12 +162,5 @@ if __name__ == '__main__':
     """Возвращаем обратно значения с бд и принимаем за текущие константы(бесполезно, но ради практики можно)"""
     URL, author_name, number_of_processes, task = table_to_constants()
 
+    """mp пока, что реализована только на task = 1(когда парсим весь сайт целиком)"""
     main()
-
-    #
-    #
-    # proc_queue = Queue()
-    #
-    # for _ in range(number_of_processes):
-    #     parse_proc = Process(target=thread, args=(proc_queue,))
-    #     parse_proc.start()
