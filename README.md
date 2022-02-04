@@ -1,14 +1,11 @@
-"# Blog parser" 
-Parser uses multiprocessing, proxy and changeable User-Agent header.
+# Blog parser 
+Parser uses PostgreSQL driver, multiprocessing, proxy and changeable User-Agent header.
 
-PostgreSQL Tables:
-'Config', 'Parser'
+#### Установка:
+1. Склонируйте репозиторий
+2. Создайте и войдите в вирутальное окружение
+3. Установите зависимости:
+    - `pip install -r requirements.txt`
 
-'Config' columns: 
-str column url = 'https://bikepost.ru/index/'
-str column author_name
-int column number_of_processes
-int column task = 1 - 'is search for author posts throughout the site'/ task = 2 - 'search for new posts by the author'
-
-'Parser' columns:
-str columns author_name, post_name, post_date
+#### Настройка
+Перед запуском необходимо заполнить поля: URL, author_name, number_of_processes, task, где переменная task = 1 - поиск постов автора по всему сайту, task = 2 - поиск только новых постов автора.
