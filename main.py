@@ -1,3 +1,5 @@
+import multiprocessing
+
 import requests
 from bs4 import BeautifulSoup
 
@@ -6,12 +8,12 @@ from components.database import AddData, GetDelData, _get_session, ConstantsData
 from multiprocessing import Process, Queue
 
 
-def get_html(url):
+def get_html(url):  # Получаем результат парсинга index страницы
     r = requests.get(url, headers=useragent, proxies=proxy)
     return r.text
 
 
-def get_page_links(html):
+def get_page_links(html):   # Получаем количество страниц блога и создаем урлы
     all_links = []
     soup = BeautifulSoup(html, 'lxml')
     page_number = int(soup.find('div', class_='pagination').find('ul').find_all('li')[-1].find('a').text)
@@ -20,7 +22,7 @@ def get_page_links(html):
     return all_links
 
 
-def get_data_post(html):
+def get_data_post(html):    # Парсим
     URL, author_name, number_of_processes, task = table_to_constants()  # Процесс не видит эти константы,\
     # объявленные в if __name__ == __main__, есть догадки почему, но пока так
     print(f'New proxy & User-Agent: {proxy} & {useragent}')
@@ -55,13 +57,13 @@ def get_data_post(html):
     return post_data_list
 
 
-def config_to_table():
+def config_to_table():  # Записываем константы из модуля config в таблицу config
     session = _get_session()
     database = ConstantsDatabaseRelation(session)
     database.add_config_data()
 
 
-def table_to_constants():
+def table_to_constants():   # Обращаемся к таблице config за константами URL, author_name, numbers_of_processes, task
     session = _get_session()
     database = ConstantsDatabaseRelation(session)
     data = database.get_config_data()
@@ -73,20 +75,20 @@ def table_to_constants():
     return current_URL, current_author_name, current_number_of_processes, current_task
 
 
-def get_data_parser():
+def get_data_parser():  # Возвращаем всё то, что находится в таблицу parser
     session = _get_session()
     database = GetDelData(session)
     data = database.get_data()
     return data
 
 
-def del_data_parser():
+def del_data_parser():  # Удаляем всё то, что находится в таблице parser
     session = _get_session()
     database = GetDelData(session)
     database.del_data()
 
 
-def add_data_parser(data):
+def add_data_parser(data):  # Добавляем полученные парсингом author_name, post_name, post_date в таблицу parser
     session = _get_session()
     for row in data:
         author_name, post_name, post_date = row['author'], row['title'], row['date']
@@ -94,13 +96,14 @@ def add_data_parser(data):
         database.add_data()
 
 
-def creator_task_one(data, queue):
+def creator_task_one(data, queue):  # Создаем очередь(в частности из списка в котором каждый url это следующая \
+    # страница блога)
     print('creating data putting it on the queue')
     for item in data:
         queue.put(item)
 
 
-def thread_task_one(queue):
+def thread_task_one(queue):   # Сам процесс. Парсим урл из созданной очереди и записываем в бд
     while not queue.empty():
         each_url = queue.get()
         html = get_html(each_url)
@@ -113,9 +116,9 @@ def thread_task_one(queue):
             print('The post has been added')
 
 
-"""Пока не уверен, что в принципе для какой-либо из задач task=2 нужна multiprocessors. Только если перевести список, \
-который содержит в себе наполнение таблицы parser в очередь Queue() и вести поиск совпадений post_name с помощью \
-нескольких процессов."""
+"""Пока не уверен, что в принципе для какой-либо из задач task=2 нужна multiprocessors... Только если в случае когда\
+ таблица хорошо заполнена, перевести список, который содержит в себе наполнение таблицы parser в очередь Queue() и\
+  вести поиск совпадений post_name с помощью нескольких процессов."""
 # def creator_task_two(data, queue):
 #
 #
@@ -128,16 +131,20 @@ def main():
 
     if task == 1:
         proc_queue = Queue()
-        process_one = Process(target=creator_task_one, args=(pages, proc_queue))
+        process_one = Process(target=creator_task_one, args=(pages, proc_queue))  # Создаем процесс создания очереди из\
+        # урлов каждой страницы блога
         process_one.start()
         # process_one.join()  # не работает( По идее, запускаем процесс наполнения очереди proc_queue полученными \
         # урлами, пока все урлы не прийдут в proc_queue не парсим
 
         for _ in range(number_of_processes):
-            process_two = Process(target=thread_task_one, args=(proc_queue, ))
+            process_two = Process(target=thread_task_one, args=(proc_queue, ))  # Создаем процесс парсинга каждого урла\
+            # из очереди отдельным процессом
             process_two.start()
+            print('thread was created')
+        print(multiprocessing.cpu_count(), 'cpu count')   # Количество процессов почему-то в два раза больше, чем надо
 
-    else:   # Парсим нонстопом, если находим пост, которого нету в бд, добавляем
+    else:   # task == 2 - Парсим нонстопом, если находим пост, которого нету в бд, добавляем
         while True:
             table_data = get_data_parser()  # Проверяем, текущее наполнение таблицы
             if len(table_data) == 0:    # Если пустая, заносим текущий результат парсинга первой страницы
@@ -157,14 +164,14 @@ if __name__ == '__main__':
     """Передаем значения констант, которые мы внесли в config, как значения полей этой таблицы"""
     config_to_table()
 
-    """Получить строки из таблицы parser"""
-    # get_data_parser()
-
-    """Очистить таблицу parser"""
-    # del_data_parser()
-
     """Возвращаем обратно значения с бд и принимаем за текущие константы(бесполезно, но ради практики можно)"""
     URL, author_name, number_of_processes, task = table_to_constants()
 
     """mp пока, что реализована только на task = 1(когда парсим весь сайт целиком)"""
     main()
+
+    """Получить строки из таблицы parser"""
+    # get_data_parser()
+
+    """Очистить таблицу parser"""
+    # del_data_parser()
