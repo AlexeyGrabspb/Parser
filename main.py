@@ -113,7 +113,9 @@ def thread_task_one(queue):
             print('The post has been added')
 
 
-"""Пока не уверен, что в принципе для какой-либо из задач task=2 нужна multiprocessors"""
+"""Пока не уверен, что в принципе для какой-либо из задач task=2 нужна multiprocessors. Только если перевести список, \
+который содержит в себе наполнение таблицы parser в очередь Queue() и вести поиск совпадений post_name с помощью \
+нескольких процессов."""
 # def creator_task_two(data, queue):
 #
 #

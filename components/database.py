@@ -65,13 +65,14 @@ class GetDelData:
 
     def get_data(self):
         table_data = []
-        # records = self.session.query(Parser).all()
-        # for record in records:
-        #     print(record.__dict__)
-
         for row in self.session.query(Parser).all():
             row_dict = row.__dict__
-            del row_dict['_sa_instance_state']
+            del row_dict['_sa_instance_state']  # В main при поиске новых постов мы два раза обращаемся к данным в \
+            # таблице parser, первый раз, когда понимаем что задача стоит найти новые посты(task=2), второй раз, когда\
+            # находимся в бесконечном цикле безпрерывного поиска новых постов, второе обращение в таблицу parser
+            # необходимо нам чтобы проверить, существуют ли те посты, которые мы нашли сейчас в том списке данных, \
+            # которые мы получили в самом начале. Чтобы убедиться и найти совпадения между ними для удобства сравнения \
+            # ключ _sa_instance_state и его значение я удаляю.
             table_data.append(row_dict)
         return table_data
 
